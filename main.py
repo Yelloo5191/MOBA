@@ -54,15 +54,24 @@ class Player:
         self.abilities[3].blit(self.ability_sheet, (0, 0), (96, 0, 32, 32))
 
         # Q ability
-        self.q_image = pygame.image.load("Assets/Characters/1/q.png").convert()
-        self.q_sprite = pygame.Surface((192, 4))
-        self.q_sprite.blit(self.q_image, (96, 0))
-        self.q_sprite.set_colorkey((0, 0, 0))
+        self.q_images = []
+        for i in range(4):
+            self.q_images.append(pygame.image.load(f"Assets/Characters/1/q/q{i + 1}.png").convert())
+            self.q_images[i].set_colorkey((0, 0, 0))
+        self.q_anim_frame = 0
+        self.q_anim_timer = 0
         self.vine_dest = (0, 0)
         self.vine_start = (0, 0)
 
         # W ability
-        self.w_time = 0.5 * FPS
+        self.w_images = []
+        for i in range(4):
+            self.w_images.append(pygame.image.load(f"Assets/Characters/1/w/w{i + 1}.png").convert())
+            self.w_images[i] = self.w_images[i].convert_alpha()
+            self.w_images[i].set_alpha(200)
+            self.w_images[i].set_colorkey((0, 0, 0))
+        self.w_anim_frame = 0
+        self.w_time = 2 * FPS
         self.timer = 0
         self.w_circle = pygame.Surface((32, 32), pygame.SRCALPHA)
         self.w_circle.set_alpha(128)
@@ -148,15 +157,27 @@ class Player:
         if self.state == "Q":
             self.cooldowns[0] = self.cooldowns_max[0] * FPS
 
-            # Incrementally draw the vine
-            if self.vine_length < 100:  # Adjust the maximum length as needed
-                self.vine_length += 5  # Adjust the step as needed
+            # Animate the vine
+            self.q_anim_timer += 1
+            
+            if self.q_anim_timer >= 4 and self.q_anim_frame < 3:
+                self.q_anim_timer = 0
+                self.q_anim_frame += 1
+            
+            if self.q_anim_frame >= 3:
+                self.q_anim_frame = 3
+                if self.q_anim_timer >= 4:
+                    self.state = "idle"
+                    self.q_anim_frame = 0
+                    self.q_anim_timer = 0
+
+            self.q_sprite = pygame.Surface((192, 4))
+            self.q_sprite.blit(self.q_images[self.q_anim_frame], (96, 0))
+            self.q_sprite.set_colorkey((0, 0, 0))
 
             # Perform Q attack (vine hook)
             self.draw_vine(self.vine_start, self.vine_dest, self.vine_length)
 
-            if self.vine_length >= 100:  # Adjust the maximum length as needed
-                self.state = "idle"  # Reset state when the vine is fully drawn
         
         if self.state == "W":
             self.cooldowns[1] = self.cooldowns_max[1] * FPS
@@ -164,13 +185,23 @@ class Player:
             self.timer += 2
             if self.timer >= self.w_time:
                 self.timer = 0
-                self.state = "idle"
                 self.w_size = 32
+                self.w_anim_frame = 0
+                self.state = "idle"
+
+            # every 24 frames, increment animation frame by 1
+            if self.timer % 30 == 0:
+                self.w_anim_frame += 1
+                if self.w_anim_frame >= 4:
+                    self.w_anim_frame = 0
+
+            # draw W animation
+            display.blit(self.w_images[self.w_anim_frame], (self.x - 32, self.y - 36))
             
             # draw circle
             self.w_circle = pygame.Surface((64, 64), pygame.SRCALPHA)
             self.w_circle.set_alpha(128)
-            pygame.draw.circle(self.w_circle, (255, 0, 0), (32, 32), self.w_size // 2)
+            # pygame.draw.circle(self.w_circle, (255, 0, 0), (32, 32), self.w_size // 2)
             display.blit(self.w_circle, (self.x - 32, self.y - 36))
             circle_rect = self.w_circle.get_rect(center=(self.x, self.y - 4))
             # pygame.draw.rect(display, (255, 255, 255), circle_rect, 1)
@@ -231,7 +262,7 @@ class Player:
         display.blit(rotated_vine, rotated_rect.topleft)
 
         # Draw the vine line
-        pygame.draw.line(display, (255, 0, 0), start, end_line, 2)
+        # pygame.draw.line(display, (255, 0, 0), start, end_line, 2)
 
 player = Player(100, 100, cooldowns_max=[2, 2, 2, 2])
 world = World()
