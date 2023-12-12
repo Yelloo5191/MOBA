@@ -45,7 +45,15 @@ class Player:
         self.cooldowns = [0, 0, 0, 0]
         self.cooldowns_max = cooldowns_max
 
-        self.ability_sheet = pygame.image.load("Assets/Characters/1/attacks1.png").convert()
+        self.health_bar_image = pygame.image.load("Assets/UI/Health/healthbar.png").convert()
+        self.health_bar_image.set_colorkey((0, 0, 0))
+        self.health_bar_image = pygame.transform.scale(self.health_bar_image, (32, 8))
+        self.health_bar = pygame.Surface((32, 8), pygame.SRCALPHA)
+        self.health_bar.blit(self.health_bar_image, (0, 0))
+        self.health_bar.set_alpha(128)
+
+
+        self.ability_sheet = pygame.image.load("Assets/Characters/1/attacks1.png").convert_alpha()
         self.ability_sheet.set_colorkey((0, 0, 0))
         self.abilities = [pygame.Surface((32, 32)), pygame.Surface((32, 32)), pygame.Surface((32, 32)), pygame.Surface((32, 32))]
         self.abilities[0].blit(self.ability_sheet, (0, 0), (0, 0, 32, 32))
@@ -96,6 +104,11 @@ class Player:
 
             # get angle between player and mouse
             self.m_angle = math.atan2(mouse_y - self.y, mouse_x - self.x)
+
+            # play click animation
+            clickFX.x = mouse_x - 16
+            clickFX.y = mouse_y - 16
+            clickFX.update()
 
             # set player state to moving towards mouse
             self.state = "moving"
@@ -230,6 +243,9 @@ class Player:
         # pygame.draw.circle(display, (255, 0, 0), (self.x, self.y), 2)
         display.blit(self.image, (self.x - 16, self.y - 32))
 
+        # draw health bar
+        display.blit(self.health_bar, (self.x - 16, self.y - 40))
+
         # draw shadow
         s = pygame.Surface((32, 32), pygame.SRCALPHA)
         s.set_alpha(100)
@@ -263,9 +279,38 @@ class Player:
 
         # Draw the vine line
         # pygame.draw.line(display, (255, 0, 0), start, end_line, 2)
+    
+class FX:
+    def __init__(self, x, y, images):
+        self.x = x
+        self.y = y
+        self.images = self.setup_images(images)
+        self.timer = 0
+        self.frame = 0
+    
+    def setup_images(self, images):
+        new_images = []
+        for image in images:
+            new_images.append(pygame.image.load(image).convert())
+            new_images[-1].set_colorkey((0, 0, 0))
+        return new_images
+
+    def update(self):
+        self.timer += 1
+        if self.timer >= 2:
+            self.timer = 0
+            self.frame += 1
+            if self.frame >= len(self.images):
+                self.reset()
+        display.blit(self.images[self.frame], (self.x, self.y))
+    
+    def reset(self):
+        self.timer = 0
+        self.frame = 0
 
 player = Player(100, 100, cooldowns_max=[2, 2, 2, 2])
 world = World()
+clickFX = FX(0, 0, ["Assets/Effects/Click/click1.png", "Assets/Effects/Click/click2.png", "Assets/Effects/Click/click3.png", "Assets/Effects/Click/click4.png"])
 
 
 while True:
