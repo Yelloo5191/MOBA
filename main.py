@@ -51,6 +51,12 @@ class Player:
         self.health_bar = pygame.Surface((32, 8), pygame.SRCALPHA)
         self.health_bar.blit(self.health_bar_image, (0, 0))
         self.health_bar.set_alpha(128)
+        self.health_cover = pygame.Surface((32, 8), pygame.SRCALPHA)
+        self.health_cover.set_alpha(128)
+        self.health_cover.fill((255, 0, 0))
+
+        self.health = 800
+        self.max_health = 1000
 
 
         self.ability_sheet = pygame.image.load("Assets/Characters/1/attacks1.png").convert_alpha()
@@ -190,6 +196,16 @@ class Player:
 
             # Perform Q attack (vine hook)
             self.draw_vine(self.vine_start, self.vine_dest, self.vine_length)
+        
+        if self.state == "E":
+            self.cooldowns[2] = self.cooldowns_max[2] * FPS
+
+            self.health += 100
+
+            if self.health > self.max_health:
+                self.health = self.max_health
+
+            self.state = "idle"
 
         
         if self.state == "W":
@@ -244,7 +260,8 @@ class Player:
         display.blit(self.image, (self.x - 16, self.y - 32))
 
         # draw health bar
-        display.blit(self.health_bar, (self.x - 16, self.y - 40))
+        self.health_cover.blit(self.health_bar, (0, 0), (0, 0, 32 * self.health / self.max_health, 8))
+        display.blit(self.health_cover, (self.x - 16, self.y - 40))
 
         # draw shadow
         s = pygame.Surface((32, 32), pygame.SRCALPHA)
